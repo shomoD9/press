@@ -1,40 +1,47 @@
 # Publish V1 Capability Guide
 
-Publish V1 is intentionally chat-first. You continue writing inside Obsidian while Claude/Codex invokes deterministic Press commands under the hood.
+Publish V1 is intentionally chat-first. You keep writing inside Obsidian while Claude/Codex invokes deterministic Press capabilities behind the scenes.
 
-## How to Think About It
+## No-Manual-CLI Operating Mode
 
-Press provides four capabilities. `diagram-create` and `diagram-refine` are for visual iteration while writing. `plan-generate` creates the full visual plan when a source draft is ready. `plan-validate` checks whether manual edits broke structure.
+After bootstrap wiring is installed, users should not need to run raw capability commands in normal workflow. Natural language requests are mapped to capability entrypoints by the `_system/press-wiring.md` contract.
 
-All generated files stay inside the target project's `artifacts/` directory.
+Manual commands remain available as a fallback debugging surface.
 
 ## Capability Entry Points
-
-Use these canonical names when mapping agent skills:
 
 - `publish.diagram_create`
 - `publish.diagram_refine`
 - `publish.plan_generate`
 - `publish.plan_validate`
 
-## CLI Backing Commands
+## Agent Mapping Contract
 
-```bash
-node dist/index.js publish diagram-create --project <project-path> --source <relative-md-file> --excerpt "<excerpt>" --intent "<optional-intent>"
-node dist/index.js publish diagram-refine --project <project-path> --diagram <diagram-id-or-filename> --instruction "<instruction>"
-node dist/index.js publish plan-generate --project <project-path> --source <relative-md-file>
-node dist/index.js publish plan-validate --project <project-path>
-```
+When the user asks to generate a diagram for a passage, route to `publish.diagram_create`.
 
-## Chat Phrases To Capability Mapping
+When the user asks to iterate or revise a known diagram, route to `publish.diagram_refine`.
 
-When you say "make a diagram for this paragraph," the wrapper should call `publish.diagram_create`.
+When the user asks to generate a visual plan from a draft or final essay, route to `publish.plan_generate`.
 
-When you say "refine diagram-03 to simplify labels," the wrapper should call `publish.diagram_refine`.
+When the user asks to check consistency or readiness, route to `publish.plan_validate`.
 
-When you say "generate visual plan for this essay," the wrapper should call `publish.plan_generate`.
+If required parameters are missing, ask one concise clarifying question, then execute.
 
-When you say "check if my plan is still valid," the wrapper should call `publish.plan_validate`.
+## Required Parameter Extraction
+
+Project root should be inferred from active file context and must resolve to `Essays/<slug>` or `Commentary/<slug>`.
+
+Source file should be relative to project root and must be a markdown file.
+
+Diagram refinement must target a diagram ID or filename.
+
+## Output Contract
+
+Always report created or updated files with absolute paths.
+
+Always include warnings from Press (for example, when Excalidraw web links are unavailable and local files stay authoritative).
+
+Never report success without at least one concrete output file path.
 
 ## Expected Files Per Project
 
@@ -45,4 +52,31 @@ Press writes:
 - `artifacts/diagram-links.md`
 - `artifacts/.press/plan-state.json`
 
-If Excalidraw web links are unavailable in a run, Press continues with local files and records a warning.
+## Lifecycle Commands
+
+Install once:
+
+```bash
+npm run bootstrap -- --vault "/absolute/path/to/creative"
+```
+
+Upgrade to latest stable release:
+
+```bash
+npm run update
+```
+
+Run health checks:
+
+```bash
+npm run doctor
+```
+
+## Manual Command Surface (Fallback)
+
+```bash
+node dist/index.js publish diagram-create --project <project-path> --source <relative-md-file> --excerpt "<excerpt>" --intent "<optional-intent>"
+node dist/index.js publish diagram-refine --project <project-path> --diagram <diagram-id-or-filename> --instruction "<instruction>"
+node dist/index.js publish plan-generate --project <project-path> --source <relative-md-file>
+node dist/index.js publish plan-validate --project <project-path>
+```
