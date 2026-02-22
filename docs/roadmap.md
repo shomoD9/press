@@ -29,7 +29,9 @@ Both modules live under a single product. The Write module feeds into the Publis
 Three things ship together:
 
 ### Write Module V1 — Essay Engine
-The first version of the Write module. Helps Shomo get from idea to finished essay faster. Scope to be defined — this is the next product conversation after V1 ships.
+A five-phase workflow that takes Shomo from idea to finished essay: Discovery → Convergence → Assembly → Refinement → Handoff. Includes a defined creative vault structure (two separate vaults — creative and personal — under a shared parent), an inbox for zero-friction capture, a dashboard for tracking all active projects at a glance, and system behaviors for crux monitoring, self-contained unit detection, brevity enforcement, and pruned material preservation.
+
+**Spec:** `spec-v2-write-module.md`
 
 ### Descript Bridge
 Pushes the visual plan directly into Descript as timeline markers, comments, or arrangement commands. This depends on what Descript's API allows — technical research is required before scoping. If the Descript API does not support this, this component is deprioritized and the visual plan table remains the primary interface.
