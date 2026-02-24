@@ -8,18 +8,19 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: npm run update [-- --vault "/absolute/path/to/creative"] [--tag "vX.Y.Z"]
+Usage: npm run update [-- --vault "/absolute/path/to/creative"] [--tag "vX.Y.Z"] [--excalidraw-mcp-command "<server command>"]
 USAGE
 }
 
 read_config_value() {
   local key="$1"
   local config_file="$2"
-  node -e "const fs=require('fs'); const p=process.argv[1]; const k=process.argv[2]; if(!fs.existsSync(p)){process.exit(0);} const raw=fs.readFileSync(p,'utf8'); const obj=JSON.parse(raw); if(obj[k]){process.stdout.write(String(obj[k]));}" "$config_file" "$key"
+  node -e "const fs=require('fs'); const p=process.argv[1]; const k=process.argv[2]; if(!fs.existsSync(p)){process.exit(0);} const raw=fs.readFileSync(p,'utf8'); const obj=JSON.parse(raw); if(obj[k] !== undefined){process.stdout.write(String(obj[k]));}" "$config_file" "$key"
 }
 
 VAULT_PATH=""
 EXPLICIT_TAG=""
+EXCALIDRAW_MCP_COMMAND=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -29,6 +30,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --tag)
       EXPLICIT_TAG="${2:-}"
+      shift 2
+      ;;
+    --excalidraw-mcp-command)
+      EXCALIDRAW_MCP_COMMAND="${2:-}"
       shift 2
       ;;
     --help|help)
@@ -56,6 +61,10 @@ fi
 
 if [[ -z "$VAULT_PATH" ]]; then
   VAULT_PATH="$(read_config_value vaultPath "$CONFIG_FILE")"
+fi
+
+if [[ -z "$EXCALIDRAW_MCP_COMMAND" ]]; then
+  EXCALIDRAW_MCP_COMMAND="$(read_config_value excalidrawMcpCommand "$CONFIG_FILE")"
 fi
 
 echo "[update] Fetching tags..."
@@ -96,14 +105,18 @@ if [[ -n "$VAULT_PATH" ]]; then
   node --import tsx "$REPO_ROOT/scripts/install-wiring.ts" --vault "$VAULT_PATH" --press-command "$PRESS_COMMAND" --quiet
 fi
 
-cat > "$CONFIG_FILE" <<JSON
-{
-  "vaultPath": "$VAULT_PATH",
-  "channel": "stable",
-  "lastUpdateTag": "$TARGET_TAG",
-  "lastUpdateAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-}
-JSON
+node -e '
+const fs = require("fs");
+const file = process.argv[1];
+const data = {
+  vaultPath: process.argv[2],
+  channel: "stable",
+  excalidrawMcpCommand: process.argv[3],
+  lastUpdateTag: process.argv[4],
+  lastUpdateAt: process.argv[5]
+};
+fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+' "$CONFIG_FILE" "$VAULT_PATH" "$EXCALIDRAW_MCP_COMMAND" "$TARGET_TAG" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 echo ""
 echo "Updated to $TARGET_TAG"

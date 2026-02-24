@@ -27,6 +27,14 @@ When the user asks to produce a visual plan from a draft or final essay, call `p
 
 When the user asks to check integrity or repair readiness, call `publish.plan_validate`.
 
+## Excalidraw MCP Rules
+
+Do not manually hand-author `.excalidraw` JSON as a primary workflow. Use Press capabilities so the Excalidraw integration path is consistent.
+
+If Press returns a warning that Excalidraw MCP is unavailable, state that clearly in one sentence and ask whether to continue in local fallback mode.
+
+Never spend multiple minutes planning manual JSON edits before checking capability execution and MCP availability.
+
 ## Parameter Extraction Rules
 
 First, infer the project root from the currently active file path. The project root must be the directory ending with `Essays/<slug>` or `Commentary/<slug>`.

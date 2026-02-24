@@ -60,8 +60,8 @@ test("install-wiring writes press-wiring.md and updates CLAUDE/AGENTS files", as
     });
 
     assert.ok(result.updatedFiles.some((file) => file.endsWith("press-wiring.md")));
-    assert.ok(result.updatedFiles.some((file) => file.endsWith("CLAUDE.md")));
-    assert.ok(result.updatedFiles.some((file) => file.endsWith("AGENTS.md")));
+    assert.ok(result.updatedFiles.some((file) => file.endsWith("_system/CLAUDE.md")));
+    assert.ok(result.updatedFiles.some((file) => file.endsWith("_system/AGENTS.md")));
 
     const wiring = await readFile(path.join(workspace.system, "press-wiring.md"), "utf8");
     assert.match(wiring, /node \/custom\/press\/dist\/index\.js/);
@@ -71,6 +71,25 @@ test("install-wiring writes press-wiring.md and updates CLAUDE/AGENTS files", as
 
     assert.match(claude, /PRESS_WIRING:BEGIN/);
     assert.match(agents, /PRESS_WIRING:BEGIN/);
+  } finally {
+    await cleanup(workspace);
+  }
+});
+
+test("install-wiring creates root-level agent files for multi-agent discovery", async () => {
+  const workspace = await createWiringWorkspace({ withClaude: true, withAgents: true });
+
+  try {
+    const result = await installWiring({ vaultPath: workspace.creative });
+
+    for (const fileName of ["CLAUDE.md", "AGENTS.md", "WARP.md", "CODEX.md", "CURSOR.md"]) {
+      const filePath = path.join(workspace.creative, fileName);
+      const content = await readFile(filePath, "utf8");
+      assert.match(content, /PRESS_WIRING:BEGIN/);
+      assert.ok(result.updatedFiles.includes(filePath));
+    }
+
+    assert.ok(result.createdFiles.some((file) => file.endsWith("WARP.md")));
   } finally {
     await cleanup(workspace);
   }
@@ -87,22 +106,24 @@ test("install-wiring is idempotent and does not duplicate marker blocks", async 
 
     const claudePath = path.join(workspace.system, "CLAUDE.md");
     const agentsPath = path.join(workspace.system, "AGENTS.md");
+    const rootWarpPath = path.join(workspace.creative, "WARP.md");
 
     assert.equal(await markerCount(claudePath), 1);
     assert.equal(await markerCount(agentsPath), 1);
+    assert.equal(await markerCount(rootWarpPath), 1);
   } finally {
     await cleanup(workspace);
   }
 });
 
-test("install-wiring succeeds when only one instruction file exists", async () => {
+test("install-wiring succeeds when only one _system instruction file exists", async () => {
   const workspace = await createWiringWorkspace({ withClaude: true, withAgents: false });
 
   try {
     const result = await installWiring({ vaultPath: workspace.creative });
 
-    assert.ok(result.updatedFiles.some((file) => file.endsWith("CLAUDE.md")));
-    assert.ok(result.skippedFiles.some((file) => file.endsWith("AGENTS.md")));
+    assert.ok(result.updatedFiles.some((file) => file.endsWith("_system/CLAUDE.md")));
+    assert.ok(result.skippedFiles.some((file) => file.endsWith("_system/AGENTS.md")));
   } finally {
     await cleanup(workspace);
   }

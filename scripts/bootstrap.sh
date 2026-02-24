@@ -4,21 +4,27 @@
 # chat without recurring manual CLI steps.
 #
 # It validates prerequisites, builds and tests the runtime, installs a local command
-# shim, wires the target creative vault, and runs a health check.
+# shim, wires the target creative vault, stores local install metadata (including
+# Excalidraw MCP command when provided), and runs a health check.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: npm run bootstrap -- --vault "/absolute/path/to/creative"
+Usage: npm run bootstrap -- --vault "/absolute/path/to/creative" [--excalidraw-mcp-command "<server command>"]
 USAGE
 }
 
 VAULT_PATH=""
+EXCALIDRAW_MCP_COMMAND=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --vault)
       VAULT_PATH="${2:-}"
+      shift 2
+      ;;
+    --excalidraw-mcp-command)
+      EXCALIDRAW_MCP_COMMAND="${2:-}"
       shift 2
       ;;
     --help|help)
@@ -77,6 +83,8 @@ mkdir -p "$INSTALL_BIN_DIR"
 cat > "$PRESS_SHIM_PATH" <<SHIM
 #!/usr/bin/env bash
 set -euo pipefail
+export PRESS_EXCALIDRAW_EXEC="node"
+export PRESS_EXCALIDRAW_ARGS="--import tsx $REPO_ROOT/scripts/excalidraw-mcp-bridge.ts"
 node "$REPO_ROOT/dist/index.js" "\$@"
 SHIM
 chmod +x "$PRESS_SHIM_PATH"
@@ -84,15 +92,19 @@ chmod +x "$PRESS_SHIM_PATH"
 echo "[bootstrap] Installing vault wiring..."
 node --import tsx "$REPO_ROOT/scripts/install-wiring.ts" --vault "$VAULT_PATH" --press-command "$PRESS_COMMAND"
 
-# We keep local install metadata out of git so update/doctor commands can run with
-# minimal user input in future sessions.
-cat > "$REPO_ROOT/.press-local.json" <<JSON
-{
-  "vaultPath": "$VAULT_PATH",
-  "channel": "stable",
-  "lastBootstrapAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-}
-JSON
+# We write config via Node so values remain valid JSON even when commands contain quotes.
+node -e '
+const fs = require("fs");
+const path = require("path");
+const file = path.join(process.argv[1], ".press-local.json");
+const data = {
+  vaultPath: process.argv[2],
+  channel: "stable",
+  excalidrawMcpCommand: process.argv[3],
+  lastBootstrapAt: process.argv[4]
+};
+fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+' "$REPO_ROOT" "$VAULT_PATH" "$EXCALIDRAW_MCP_COMMAND" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 echo "[bootstrap] Running doctor checks..."
 bash "$REPO_ROOT/scripts/doctor.sh" --vault "$VAULT_PATH"
@@ -100,6 +112,11 @@ bash "$REPO_ROOT/scripts/doctor.sh" --vault "$VAULT_PATH"
 if [[ ":$PATH:" != *":$INSTALL_BIN_DIR:"* ]]; then
   echo "[bootstrap] Note: $INSTALL_BIN_DIR is not in your PATH."
   echo "Add this line to ~/.zshrc: export PATH=\"$INSTALL_BIN_DIR:\$PATH\""
+fi
+
+if [[ -z "$EXCALIDRAW_MCP_COMMAND" ]]; then
+  echo "[bootstrap] Note: Excalidraw MCP server command was not provided."
+  echo "Press will work with local fallback diagrams until MCP command is configured in .press-local.json."
 fi
 
 echo ""

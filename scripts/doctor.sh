@@ -3,7 +3,8 @@
 # bootstrap and daily usage can quickly confirm that deterministic capabilities are
 # ready before a writing session begins.
 #
-# It checks runtime artifacts, command shim availability, and required vault files.
+# It checks runtime artifacts, command shim availability, required vault files, root
+# instruction wiring, and Excalidraw MCP bridge readiness.
 set -euo pipefail
 
 usage() {
@@ -15,7 +16,7 @@ USAGE
 read_config_value() {
   local key="$1"
   local config_file="$2"
-  node -e "const fs=require('fs'); const p=process.argv[1]; const k=process.argv[2]; if(!fs.existsSync(p)){process.exit(0);} const raw=fs.readFileSync(p,'utf8'); const obj=JSON.parse(raw); if(obj[k]){process.stdout.write(String(obj[k]));}" "$config_file" "$key"
+  node -e "const fs=require('fs'); const p=process.argv[1]; const k=process.argv[2]; if(!fs.existsSync(p)){process.exit(0);} const raw=fs.readFileSync(p,'utf8'); const obj=JSON.parse(raw); if(obj[k] !== undefined){process.stdout.write(String(obj[k]));}" "$config_file" "$key"
 }
 
 VAULT_PATH=""
@@ -93,34 +94,57 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
   WARNINGS=$((WARNINGS + 1))
 fi
 
-if [[ ! -d "$VAULT_PATH" ]]; then
-  echo "[doctor] ERROR: vault path does not exist: $VAULT_PATH"
+SYSTEM_DIR="$VAULT_PATH/_system"
+if [[ ! -d "$SYSTEM_DIR" ]]; then
+  echo "[doctor] ERROR: missing vault _system directory: $SYSTEM_DIR"
   ERRORS=$((ERRORS + 1))
 else
-  SYSTEM_DIR="$VAULT_PATH/_system"
-  if [[ ! -d "$SYSTEM_DIR" ]]; then
-    echo "[doctor] ERROR: missing vault _system directory: $SYSTEM_DIR"
+  if [[ ! -f "$SYSTEM_DIR/visual-trigger-ruleset.md" ]]; then
+    echo "[doctor] ERROR: missing visual trigger ruleset in vault _system."
     ERRORS=$((ERRORS + 1))
-  else
-    if [[ ! -f "$SYSTEM_DIR/visual-trigger-ruleset.md" ]]; then
-      echo "[doctor] ERROR: missing visual trigger ruleset in vault _system."
-      ERRORS=$((ERRORS + 1))
-    fi
+  fi
 
-    if [[ ! -f "$SYSTEM_DIR/press-wiring.md" ]]; then
-      echo "[doctor] ERROR: missing press wiring file: $SYSTEM_DIR/press-wiring.md"
-      ERRORS=$((ERRORS + 1))
-    fi
+  if [[ ! -f "$SYSTEM_DIR/press-wiring.md" ]]; then
+    echo "[doctor] ERROR: missing press wiring file: $SYSTEM_DIR/press-wiring.md"
+    ERRORS=$((ERRORS + 1))
+  fi
 
-    for FILE_NAME in CLAUDE.md AGENTS.md; do
-      TARGET_FILE="$SYSTEM_DIR/$FILE_NAME"
-      if [[ -f "$TARGET_FILE" ]]; then
-        if ! grep -q "PRESS_WIRING:BEGIN" "$TARGET_FILE" || ! grep -q "PRESS_WIRING:END" "$TARGET_FILE"; then
-          echo "[doctor] WARNING: $TARGET_FILE exists but does not contain Press marker block."
-          WARNINGS=$((WARNINGS + 1))
-        fi
+  for FILE_NAME in CLAUDE.md AGENTS.md; do
+    TARGET_FILE="$SYSTEM_DIR/$FILE_NAME"
+    if [[ -f "$TARGET_FILE" ]]; then
+      if ! grep -q "PRESS_WIRING:BEGIN" "$TARGET_FILE" || ! grep -q "PRESS_WIRING:END" "$TARGET_FILE"; then
+        echo "[doctor] WARNING: $TARGET_FILE exists but does not contain Press marker block."
+        WARNINGS=$((WARNINGS + 1))
       fi
-    done
+    fi
+  done
+fi
+
+# Root-level files help agents that only inspect project root, like several CLI tools.
+for FILE_NAME in CLAUDE.md AGENTS.md WARP.md CODEX.md CURSOR.md; do
+  TARGET_FILE="$VAULT_PATH/$FILE_NAME"
+  if [[ -f "$TARGET_FILE" ]]; then
+    if ! grep -q "PRESS_WIRING:BEGIN" "$TARGET_FILE" || ! grep -q "PRESS_WIRING:END" "$TARGET_FILE"; then
+      echo "[doctor] WARNING: $TARGET_FILE exists but does not contain Press marker block."
+      WARNINGS=$((WARNINGS + 1))
+    fi
+  fi
+done
+
+EXCALIDRAW_MCP_COMMAND="$(read_config_value excalidrawMcpCommand "$CONFIG_FILE")"
+BRIDGE_SCRIPT="$REPO_ROOT/scripts/excalidraw-mcp-bridge.ts"
+
+if [[ ! -f "$BRIDGE_SCRIPT" ]]; then
+  echo "[doctor] ERROR: missing first-party Excalidraw bridge: $BRIDGE_SCRIPT"
+  ERRORS=$((ERRORS + 1))
+elif [[ -z "$EXCALIDRAW_MCP_COMMAND" ]]; then
+  echo "[doctor] WARNING: Excalidraw MCP command is not configured."
+  echo "[doctor] WARNING: Press will fallback to local placeholder diagrams until configured."
+  WARNINGS=$((WARNINGS + 1))
+else
+  if ! PRESS_EXCALIDRAW_MCP_SERVER_CMD="$EXCALIDRAW_MCP_COMMAND" node --import tsx "$BRIDGE_SCRIPT" --check >/dev/null 2>&1; then
+    echo "[doctor] ERROR: Excalidraw MCP bridge check failed for configured command."
+    ERRORS=$((ERRORS + 1))
   fi
 fi
 

@@ -1,12 +1,16 @@
 /**
  * This file is the boundary between Press and Excalidraw tooling. It exists so the
- * rest of Publish V1 can stay deterministic even if the MCP implementation changes.
+ * rest of Publish V1 can stay deterministic even as MCP/server details evolve.
  *
- * Capabilities call this adapter for diagram create/refine operations. The adapter can
- * invoke an external executable when configured, or fall back to a local placeholder
- * representation that keeps the workflow unblocked.
+ * Capabilities call this adapter for diagram create/refine operations. The adapter
+ * first tries a configured external command, then defaults to Press's first-party MCP
+ * bridge script, and finally falls back to local placeholder output when no MCP path
+ * is available.
  */
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { type ExcalidrawOperationResult } from "../contracts/types.js";
 
 interface CreateDiagramInput {
@@ -31,6 +35,12 @@ interface ExternalToolResponse {
   content: string;
   webUrl?: string;
   warnings?: string[];
+}
+
+interface ExternalCommandConfig {
+  executable: string;
+  args: string[];
+  source: "explicit-env" | "first-party-bridge";
 }
 
 function safeParseJson<T>(raw: string): T | null {
@@ -60,27 +70,63 @@ function buildFallbackDiagramContent(metadata: Record<string, unknown>): string 
   );
 }
 
-function runExternalTool(operation: string, payload: unknown): ExternalToolResponse | null {
-  const executable = process.env.PRESS_EXCALIDRAW_EXEC;
-  if (!executable) {
-    return null;
-  }
-
-  const argumentString = process.env.PRESS_EXCALIDRAW_ARGS || "";
-  const extraArgs = argumentString
+function parseArgsString(raw: string): string[] {
+  return raw
     .split(" ")
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
 
-  const result = spawnSync(executable, [...extraArgs, operation, JSON.stringify(payload)], {
-    encoding: "utf8"
+function resolveExternalCommand(): ExternalCommandConfig | null {
+  const explicitExecutable = process.env.PRESS_EXCALIDRAW_EXEC?.trim();
+  if (explicitExecutable) {
+    return {
+      executable: explicitExecutable,
+      args: parseArgsString(process.env.PRESS_EXCALIDRAW_ARGS || ""),
+      source: "explicit-env"
+    };
+  }
+
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const bridgePath = path.join(repoRoot, "scripts", "excalidraw-mcp-bridge.ts");
+
+  if (!existsSync(bridgePath)) {
+    return null;
+  }
+
+  // First-party bridge is our default integration path for Excalidraw MCP.
+  return {
+    executable: "node",
+    args: ["--import", "tsx", bridgePath],
+    source: "first-party-bridge"
+  };
+}
+
+function runExternalTool(operation: string, payload: unknown): ExternalToolResponse | null {
+  const command = resolveExternalCommand();
+  if (!command) {
+    return null;
+  }
+
+  const result = spawnSync(command.executable, [...command.args, operation, JSON.stringify(payload)], {
+    encoding: "utf8",
+    env: { ...process.env }
   });
+
+  if (result.error) {
+    return {
+      content: "",
+      warnings: [
+        `Excalidraw ${command.source} command failed to start for ${operation}. Falling back to local placeholder output.`
+      ]
+    };
+  }
 
   if (result.status !== 0) {
     return {
       content: "",
       warnings: [
-        `Excalidraw executable failed for ${operation}. Falling back to local placeholder output.`
+        `Excalidraw ${command.source} command failed for ${operation}. Falling back to local placeholder output.`
       ]
     };
   }
@@ -90,7 +136,7 @@ function runExternalTool(operation: string, payload: unknown): ExternalToolRespo
     return {
       content: "",
       warnings: [
-        `Excalidraw executable returned invalid JSON for ${operation}. Falling back to local placeholder output.`
+        `Excalidraw ${command.source} command returned invalid JSON for ${operation}. Falling back to local placeholder output.`
       ]
     };
   }
@@ -121,7 +167,7 @@ export function createExcalidrawAdapter(): ExcalidrawAdapter {
           sourceSummary: input.sourceText.slice(0, 200)
         }),
         warnings: [
-          "Excalidraw web link unavailable in this run; local .excalidraw file remains the source of truth."
+          "Excalidraw MCP was unavailable in this run; local .excalidraw file remains the source of truth."
         ]
       };
     },
@@ -166,7 +212,7 @@ export function createExcalidrawAdapter(): ExcalidrawAdapter {
       return {
         content: `${JSON.stringify(merged, null, 2)}\n`,
         warnings: [
-          "Excalidraw web link unavailable in this refine run; local .excalidraw file remains the source of truth."
+          "Excalidraw MCP was unavailable in this refine run; local .excalidraw file remains the source of truth."
         ]
       };
     }

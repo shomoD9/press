@@ -78,6 +78,16 @@ Remotion enters the visual trigger ruleset as a new trigger type. The agent deci
 
 ---
 
+## V6: In-Vault Product UX (No Terminal-First Install)
+
+**Module:** Platform experience (cross-module)
+
+**What ships:** Press installation, wiring, health checks, and stable-channel updates become in-vault actions callable from agent chat while Obsidian is open. The product no longer requires terminal-first setup for normal users. Press verifies prerequisites, self-wires `_system` files, and provides one-click update and rollback guidance directly in the writing environment.
+
+**What Shomo gets:** Onboarding and maintenance feel native to the creative workflow. He can install, repair, and upgrade Press without leaving Obsidian.
+
+---
+
 ## Milestone Summary
 
 | Version | What Ships | Module |
@@ -87,3 +97,4 @@ Remotion enters the visual trigger ruleset as a new trigger type. The agent deci
 | V3 | Metadata & Publishing Automation + Preview Workflow | Publish |
 | V4 | Remotion Integration | Publish |
 | V5 | Full Video Assembly + Full Pipeline | Publish |
+| V6 | In-vault install, wiring, health checks, and updates | Platform experience |

@@ -7,10 +7,12 @@ Press is a chat-native creative production engine. You write in Obsidian, talk t
 Run this from the repository root:
 
 ```bash
-npm run bootstrap -- --vault "/absolute/path/to/creative"
+npm run bootstrap -- --vault "/absolute/path/to/creative" --excalidraw-mcp-command "<your excalidraw mcp server command>"
 ```
 
-This command installs dependencies, builds and tests the runtime, installs a local `press` shim, writes vault wiring in `_system/`, and runs doctor checks.
+This command installs dependencies, builds and tests the runtime, installs a local `press` shim, writes vault wiring in `_system/`, creates root-level instruction files for common agent tools, and runs doctor checks.
+
+If you skip `--excalidraw-mcp-command`, Press still works but diagrams fall back to local placeholder mode until MCP is configured.
 
 ## Daily Usage
 

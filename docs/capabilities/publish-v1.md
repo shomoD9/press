@@ -1,12 +1,12 @@
 # Publish V1 Capability Guide
 
-Publish V1 is intentionally chat-first. You keep writing inside Obsidian while Claude/Codex invokes deterministic Press capabilities behind the scenes.
+Publish V1 is intentionally chat-first. You keep writing inside Obsidian while Claude/Codex/Warp-style agents invoke deterministic Press capabilities behind the scenes.
 
 ## No-Manual-CLI Operating Mode
 
-After bootstrap wiring is installed, users should not need to run raw capability commands in normal workflow. Natural language requests are mapped to capability entrypoints by the `_system/press-wiring.md` contract.
+After bootstrap wiring is installed, users should not need to run raw capability commands in normal workflow. Natural language requests are mapped to capability entrypoints by the vault wiring contract.
 
-Manual commands remain available as a fallback debugging surface.
+Manual commands remain available as fallback debugging surfaces.
 
 ## Capability Entry Points
 
@@ -27,6 +27,14 @@ When the user asks to check consistency or readiness, route to `publish.plan_val
 
 If required parameters are missing, ask one concise clarifying question, then execute.
 
+## Excalidraw MCP Contract
+
+Agents must not default to hand-authoring `.excalidraw` JSON for Press workflows.
+
+Diagram actions should be executed through Press capabilities so first-party Excalidraw MCP wiring is applied consistently.
+
+If Press reports MCP unavailability, agent should say so immediately and ask whether to continue in local fallback mode.
+
 ## Required Parameter Extraction
 
 Project root should be inferred from active file context and must resolve to `Essays/<slug>` or `Commentary/<slug>`.
@@ -39,7 +47,7 @@ Diagram refinement must target a diagram ID or filename.
 
 Always report created or updated files with absolute paths.
 
-Always include warnings from Press (for example, when Excalidraw web links are unavailable and local files stay authoritative).
+Always include warnings from Press (for example, when Excalidraw MCP is unavailable and local files stay authoritative).
 
 Never report success without at least one concrete output file path.
 
@@ -57,7 +65,7 @@ Press writes:
 Install once:
 
 ```bash
-npm run bootstrap -- --vault "/absolute/path/to/creative"
+npm run bootstrap -- --vault "/absolute/path/to/creative" --excalidraw-mcp-command "<your excalidraw mcp server command>"
 ```
 
 Upgrade to latest stable release:

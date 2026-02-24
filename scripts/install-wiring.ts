@@ -1,10 +1,11 @@
 /**
- * This file installs Press wiring into a creative vault's `_system` folder. It exists
- * so first-time setup and upgrades can keep agent behavior consistent without asking
- * users to manually copy instruction blocks.
+ * This file installs Press wiring into a creative vault so multiple agent families can
+ * discover the same execution contract. It exists because chat-native behavior only
+ * works when each agent can find one canonical wiring source without manual setup.
  *
- * It talks to a markdown template, writes `press-wiring.md`, and injects marker blocks
- * into `_system/CLAUDE.md` and `_system/AGENTS.md` when those files exist.
+ * It writes `_system/press-wiring.md`, injects marker blocks into `_system` instruction
+ * files, and also creates or updates root-level instruction files (for tools that only
+ * scan project root) so behavior stays consistent across agent ecosystems.
  */
 import { access, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -12,11 +13,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const MARKER_BEGIN = "<!-- PRESS_WIRING:BEGIN -->";
 const MARKER_END = "<!-- PRESS_WIRING:END -->";
+const DEFAULT_ROOT_AGENT_FILES = ["CLAUDE.md", "AGENTS.md", "WARP.md", "CODEX.md", "CURSOR.md"];
 
 export interface InstallWiringOptions {
   vaultPath: string;
   pressCommand?: string;
   templatePath?: string;
+  rootAgentFiles?: string[];
   quiet?: boolean;
 }
 
@@ -25,6 +28,7 @@ export interface InstallWiringResult {
   updatedFiles: string[];
   unchangedFiles: string[];
   skippedFiles: string[];
+  createdFiles: string[];
   backups: string[];
   warnings: string[];
 }
@@ -32,6 +36,7 @@ export interface InstallWiringResult {
 interface ParsedCliArgs {
   vaultPath: string;
   pressCommand?: string;
+  rootAgentFiles?: string[];
   quiet: boolean;
 }
 
@@ -56,16 +61,31 @@ function withTrailingNewline(value: string): string {
   return value.endsWith("\n") ? value : `${value}\n`;
 }
 
-function buildInjectedBlock(relativeWiringPath: string): string {
+function buildInjectedBlock(relativeWiringPath: string, contextLabel: string): string {
   return [
     MARKER_BEGIN,
-    "Press Publish V1 Wiring",
+    `Press Publish V1 Wiring (${contextLabel})`,
     "",
     `Always load and follow \`${relativeWiringPath}\` before handling publish requests.`,
     "When user intent matches diagram creation/refinement, plan generation, or validation, invoke the mapped `publish.*` capability defined in that file.",
     "If required parameters are missing, ask one concise clarifying question, then execute.",
+    "Never hand-author raw .excalidraw JSON for this workflow; route through the Press capability contract.",
     MARKER_END
   ].join("\n");
+}
+
+function buildRootInstructionFile(fileName: string, block: string): string {
+  const title = fileName.replace(/\.md$/i, "");
+
+  return withTrailingNewline(
+    [
+      `# ${title}`,
+      "",
+      "This file is managed by Press wiring installation.",
+      "",
+      block
+    ].join("\n")
+  );
 }
 
 async function backupFile(filePath: string): Promise<string> {
@@ -116,9 +136,42 @@ async function ensureWritableSystemDir(systemDir: string): Promise<void> {
   await mkdir(systemDir, { recursive: true });
 }
 
+function normalizeRootAgentFiles(rawFiles: string[] | undefined): string[] {
+  const values = rawFiles && rawFiles.length > 0 ? rawFiles : DEFAULT_ROOT_AGENT_FILES;
+  const unique = new Set<string>();
+
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    // We only allow plain markdown filenames to keep writes pinned to vault root.
+    if (trimmed.includes("/") || trimmed.includes("\\") || !trimmed.endsWith(".md")) {
+      throw new Error(`Invalid agent file name: ${trimmed}`);
+    }
+
+    unique.add(trimmed);
+  }
+
+  if (unique.size === 0) {
+    throw new Error("At least one root agent filename is required.");
+  }
+
+  return [...unique];
+}
+
+function parseAgentFiles(value: string): string[] {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function parseCliArgs(argv: string[]): ParsedCliArgs {
   let vaultPath = "";
   let pressCommand: string | undefined;
+  let rootAgentFiles: string[] | undefined;
   let quiet = false;
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -144,6 +197,16 @@ function parseCliArgs(argv: string[]): ParsedCliArgs {
       continue;
     }
 
+    if (token === "--agent-files") {
+      const value = argv[index + 1];
+      if (!value) {
+        throw new Error("Missing value for --agent-files");
+      }
+      rootAgentFiles = parseAgentFiles(value);
+      index += 1;
+      continue;
+    }
+
     if (token === "--quiet") {
       quiet = true;
       continue;
@@ -151,7 +214,7 @@ function parseCliArgs(argv: string[]): ParsedCliArgs {
 
     if (token === "--help" || token === "help") {
       console.log(
-        "Usage: node --import tsx scripts/install-wiring.ts --vault <creative-vault-path> [--press-command \"node /path/to/dist/index.js\"] [--quiet]"
+        "Usage: node --import tsx scripts/install-wiring.ts --vault <creative-vault-path> [--press-command \"node /path/to/dist/index.js\"] [--agent-files \"CLAUDE.md,AGENTS.md,WARP.md\"] [--quiet]"
       );
       process.exit(0);
     }
@@ -166,12 +229,39 @@ function parseCliArgs(argv: string[]): ParsedCliArgs {
   return {
     vaultPath,
     pressCommand,
+    rootAgentFiles,
     quiet
   };
 }
 
 function applyTemplate(template: string, pressCommand: string): string {
   return template.replaceAll("{{PRESS_COMMAND}}", pressCommand);
+}
+
+async function upsertExistingDoc(
+  docPath: string,
+  block: string,
+  result: InstallWiringResult
+): Promise<void> {
+  const current = await readUtf8(docPath);
+  const { nextContent, conflict } = upsertMarkerBlock(current, block);
+
+  if (nextContent === current) {
+    result.unchangedFiles.push(docPath);
+    return;
+  }
+
+  const backup = await backupFile(docPath);
+  result.backups.push(backup);
+
+  if (conflict) {
+    result.warnings.push(
+      `Detected malformed Press markers in ${docPath}. Appended a fresh marker block and kept backup at ${backup}.`
+    );
+  }
+
+  await writeFile(docPath, nextContent, "utf8");
+  result.updatedFiles.push(docPath);
 }
 
 export async function installWiring(options: InstallWiringOptions): Promise<InstallWiringResult> {
@@ -187,6 +277,7 @@ export async function installWiring(options: InstallWiringOptions): Promise<Inst
     updatedFiles: [],
     unchangedFiles: [],
     skippedFiles: [],
+    createdFiles: [],
     backups: [],
     warnings: []
   };
@@ -211,42 +302,37 @@ export async function installWiring(options: InstallWiringOptions): Promise<Inst
   } else {
     await writeFile(result.wiringFile, renderedTemplate, "utf8");
     result.updatedFiles.push(result.wiringFile);
+    result.createdFiles.push(result.wiringFile);
   }
 
-  const candidateDocs = [
-    path.join(systemDir, "CLAUDE.md"),
-    path.join(systemDir, "AGENTS.md")
-  ];
+  const systemDocs = [path.join(systemDir, "CLAUDE.md"), path.join(systemDir, "AGENTS.md")];
+  const systemBlock = buildInjectedBlock("press-wiring.md", "_system");
 
-  const relativeWiringPath = path.relative(systemDir, result.wiringFile) || "press-wiring.md";
-  const block = buildInjectedBlock(relativeWiringPath);
-
-  for (const docPath of candidateDocs) {
+  for (const docPath of systemDocs) {
     if (!(await pathExists(docPath))) {
       result.skippedFiles.push(docPath);
       continue;
     }
 
-    const current = await readUtf8(docPath);
-    const { nextContent, conflict } = upsertMarkerBlock(current, block);
+    await upsertExistingDoc(docPath, systemBlock, result);
+  }
 
-    if (nextContent === current) {
-      result.unchangedFiles.push(docPath);
+  const rootAgentFiles = normalizeRootAgentFiles(options.rootAgentFiles);
+  const rootBlock = buildInjectedBlock("_system/press-wiring.md", "vault-root");
+
+  for (const fileName of rootAgentFiles) {
+    const targetPath = path.join(vaultPath, fileName);
+    const exists = await pathExists(targetPath);
+
+    if (!exists) {
+      const content = buildRootInstructionFile(fileName, rootBlock);
+      await writeFile(targetPath, content, "utf8");
+      result.updatedFiles.push(targetPath);
+      result.createdFiles.push(targetPath);
       continue;
     }
 
-    // We back up edited instruction files so user customizations are always recoverable.
-    const backup = await backupFile(docPath);
-    result.backups.push(backup);
-
-    if (conflict) {
-      result.warnings.push(
-        `Detected malformed Press markers in ${docPath}. Appended a fresh marker block and kept backup at ${backup}.`
-      );
-    }
-
-    await writeFile(docPath, nextContent, "utf8");
-    result.updatedFiles.push(docPath);
+    await upsertExistingDoc(targetPath, rootBlock, result);
   }
 
   return result;
@@ -256,6 +342,7 @@ function printSummary(result: InstallWiringResult): void {
   console.log("Press wiring installed.");
   console.log(`- Wiring file: ${result.wiringFile}`);
   console.log(`- Updated: ${result.updatedFiles.length}`);
+  console.log(`- Created: ${result.createdFiles.length}`);
   console.log(`- Unchanged: ${result.unchangedFiles.length}`);
   console.log(`- Skipped: ${result.skippedFiles.length}`);
   console.log(`- Backups: ${result.backups.length}`);
@@ -273,6 +360,7 @@ async function main(): Promise<void> {
   const result = await installWiring({
     vaultPath: args.vaultPath,
     pressCommand: args.pressCommand,
+    rootAgentFiles: args.rootAgentFiles,
     quiet: args.quiet
   });
 
