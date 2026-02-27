@@ -65,6 +65,8 @@ test("install-wiring writes press-wiring.md and updates CLAUDE/AGENTS files", as
 
     const wiring = await readFile(path.join(workspace.system, "press-wiring.md"), "utf8");
     assert.match(wiring, /node \/custom\/press\/dist\/index\.js/);
+    assert.match(wiring, /publish\.build_draft_package/);
+    assert.match(wiring, /Agent Preflight/);
 
     const claude = await readFile(path.join(workspace.system, "CLAUDE.md"), "utf8");
     const agents = await readFile(path.join(workspace.system, "AGENTS.md"), "utf8");

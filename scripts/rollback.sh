@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# This script upgrades Press to the newest stable tagged release. It exists so users
-# can stay on a reliable channel with one command while preserving chat-native wiring.
+# This script rolls Press back to a previous known-good git reference. It exists so
+# non-technical recovery is one command and preserves vault wiring consistency.
 #
-# It fetches tags, checks out the target stable version in detached mode, rebuilds,
-# retests, refreshes vault wiring, stores rollback metadata, and prints changelog plus
-# rollback instructions.
+# It resolves a rollback target from explicit input or saved update metadata, checks
+# out that reference in detached mode, rebuilds and retests, and refreshes vault wiring.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: npm run update [-- --vault "/absolute/path/to/creative"] [--tag "vX.Y.Z"] [--excalidraw-mcp-command "<server command>"]
+Usage: npm run rollback [-- --vault "/absolute/path/to/creative"] [--ref "<git-ref>"] [--excalidraw-mcp-command "<server command>"]
 USAGE
 }
 
@@ -20,7 +19,7 @@ read_config_value() {
 }
 
 VAULT_PATH=""
-EXPLICIT_TAG=""
+TARGET_REF=""
 EXCALIDRAW_MCP_COMMAND=""
 
 while [[ $# -gt 0 ]]; do
@@ -29,8 +28,8 @@ while [[ $# -gt 0 ]]; do
       VAULT_PATH="${2:-}"
       shift 2
       ;;
-    --tag)
-      EXPLICIT_TAG="${2:-}"
+    --ref)
+      TARGET_REF="${2:-}"
       shift 2
       ;;
     --excalidraw-mcp-command)
@@ -56,7 +55,7 @@ CONFIG_FILE="$REPO_ROOT/.press-local.json"
 cd "$REPO_ROOT"
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Update aborted: git working tree is not clean. Commit or stash changes first."
+  echo "Rollback aborted: git working tree is not clean. Commit or stash changes first."
   exit 1
 fi
 
@@ -68,32 +67,33 @@ if [[ -z "$EXCALIDRAW_MCP_COMMAND" ]]; then
   EXCALIDRAW_MCP_COMMAND="$(read_config_value excalidrawMcpCommand "$CONFIG_FILE")"
 fi
 
-echo "[update] Fetching tags..."
-git fetch --tags origin
-
-TARGET_TAG="$EXPLICIT_TAG"
-if [[ -z "$TARGET_TAG" ]]; then
-  TARGET_TAG="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
+if [[ -z "$TARGET_REF" ]]; then
+  TARGET_REF="$(read_config_value rollbackRef "$CONFIG_FILE")"
 fi
 
-if [[ -z "$TARGET_TAG" ]]; then
-  echo "No stable semver tags found."
+if [[ -z "$TARGET_REF" ]]; then
+  echo "Rollback aborted: no rollback ref provided and none saved in .press-local.json"
   exit 1
 fi
 
-PREVIOUS_REF="$(git symbolic-ref --short -q HEAD || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)"
-PREVIOUS_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+if ! git rev-parse "$TARGET_REF" >/dev/null 2>&1; then
+  echo "Rollback aborted: target ref does not exist: $TARGET_REF"
+  exit 1
+fi
 
-echo "[update] Checking out $TARGET_TAG in detached mode..."
-git checkout --detach "$TARGET_TAG"
+CURRENT_REF="$(git symbolic-ref --short -q HEAD || git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)"
+CURRENT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
 
-echo "[update] Installing dependencies..."
+echo "[rollback] Checking out $TARGET_REF in detached mode..."
+git checkout --detach "$TARGET_REF"
+
+echo "[rollback] Installing dependencies..."
 npm ci
 
-echo "[update] Building Press..."
+echo "[rollback] Building Press..."
 npm run build
 
-echo "[update] Running tests..."
+echo "[rollback] Running tests..."
 npm test
 
 if [[ -n "$VAULT_PATH" ]]; then
@@ -102,34 +102,28 @@ if [[ -n "$VAULT_PATH" ]]; then
     exit 1
   fi
   PRESS_COMMAND="node $REPO_ROOT/dist/index.js"
-  echo "[update] Refreshing vault wiring for $VAULT_PATH..."
+  echo "[rollback] Refreshing vault wiring for $VAULT_PATH..."
   node --import tsx "$REPO_ROOT/scripts/install-wiring.ts" --vault "$VAULT_PATH" --press-command "$PRESS_COMMAND" --quiet
 fi
 
+# We keep previous state and flip rollbackRef to the ref we came from for easy undo.
 node -e '
 const fs = require("fs");
 const file = process.argv[1];
 const existing = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : {};
-const data = {
+const next = {
   ...existing,
   vaultPath: process.argv[2],
   channel: "stable",
   excalidrawMcpCommand: process.argv[3],
-  lastUpdateTag: process.argv[4],
-  lastUpdateAt: process.argv[5],
+  lastRollbackRef: process.argv[4],
+  lastRollbackAt: process.argv[5],
   rollbackRef: process.argv[6],
   rollbackTag: process.argv[7]
 };
-fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
-' "$CONFIG_FILE" "$VAULT_PATH" "$EXCALIDRAW_MCP_COMMAND" "$TARGET_TAG" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$PREVIOUS_REF" "$PREVIOUS_TAG"
+fs.writeFileSync(file, JSON.stringify(next, null, 2) + "\n");
+' "$CONFIG_FILE" "$VAULT_PATH" "$EXCALIDRAW_MCP_COMMAND" "$TARGET_REF" "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$CURRENT_REF" "$CURRENT_TAG"
 
 echo ""
-echo "Updated to $TARGET_TAG"
-if [[ -n "$PREVIOUS_TAG" && "$PREVIOUS_TAG" != "$TARGET_TAG" ]]; then
-  echo ""
-  echo "Changelog summary ($PREVIOUS_TAG..$TARGET_TAG):"
-  git log --oneline "$PREVIOUS_TAG..$TARGET_TAG"
-fi
-
-echo ""
-echo "Rollback command: npm run rollback"
+echo "Rolled back to $TARGET_REF"
+echo "Undo rollback command: npm run rollback -- --ref \"$CURRENT_REF\""

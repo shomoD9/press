@@ -1,5 +1,16 @@
 # Press
 
+> [!IMPORTANT]
+> **TEMPORARY — Next Session Action Required**
+>
+> A new file has been added: `docs/vault-architecture.md`. It describes how the Obsidian vault is now structured — including `_context.md` (the Remember data layer) and `_system/registry.md` (the unified project index). These are contracts that Press must interact with.
+>
+> **On your next session with Shomo:**
+> 1. Read `docs/vault-architecture.md` in full.
+> 2. Discuss with Shomo how this affects the next Press sprint — particularly how the Write module (V2) should interact with `_context.md` and `registry.md`.
+> 3. Scope the next sprint together based on this new vault architecture.
+> 4. After scoping is complete, **delete this callout block** from CLAUDE.md. The `docs/vault-architecture.md` file remains as permanent reference.
+
 ## What This Is
 
 Press is a creative production engine for Shomo (@armchairdescending). It takes a finished essay and turns it into published content — video and written — across all platforms with minimal manual effort.

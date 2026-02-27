@@ -10,6 +10,7 @@ import { runDiagramCreate } from "./capabilities/diagram-create.js";
 import { runDiagramRefine } from "./capabilities/diagram-refine.js";
 import { runPlanGenerate } from "./capabilities/plan-generate.js";
 import { runPlanValidate } from "./capabilities/plan-validate.js";
+import { runBuildDraftPackage } from "./capabilities/build-draft-package.js";
 import { type CapabilityResult } from "./contracts/types.js";
 
 interface ParsedArgs {
@@ -26,12 +27,14 @@ Usage:
   press publish diagram-refine --project <path> --diagram <diagram-id-or-file> --instruction <text>
   press publish plan-generate --project <path> --source <relative.md>
   press publish plan-validate --project <path>
+  press publish build-draft-package --project <path> [--source <relative.md>]
 
 Alias commands:
   publish.diagram_create
   publish.diagram_refine
   publish.plan_generate
   publish.plan_validate
+  publish.build_draft_package
 `.trim();
 
   console.log(message);
@@ -121,6 +124,12 @@ async function dispatch(parsed: ParsedArgs): Promise<CapabilityResult> {
     case "publish.plan_validate":
       return runPlanValidate({
         project: requireFlag(parsed.flags, "project")
+      });
+
+    case "publish.build_draft_package":
+      return runBuildDraftPackage({
+        project: requireFlag(parsed.flags, "project"),
+        source: parsed.flags.source
       });
 
     default:

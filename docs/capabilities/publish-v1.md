@@ -14,8 +14,11 @@ Manual commands remain available as fallback debugging surfaces.
 - `publish.diagram_refine`
 - `publish.plan_generate`
 - `publish.plan_validate`
+- `publish.build_draft_package`
 
 ## Agent Mapping Contract
+
+Before diagram or plan work, run a Press capability preflight check (`press help` or equivalent runtime check). If preflight fails, stop and use install/repair flow first.
 
 When the user asks to generate a diagram for a passage, route to `publish.diagram_create`.
 
@@ -24,6 +27,8 @@ When the user asks to iterate or revise a known diagram, route to `publish.diagr
 When the user asks to generate a visual plan from a draft or final essay, route to `publish.plan_generate`.
 
 When the user asks to check consistency or readiness, route to `publish.plan_validate`.
+
+When the user asks to build article-interface handoff drafts, route to `publish.build_draft_package`.
 
 If required parameters are missing, ask one concise clarifying question, then execute.
 
@@ -59,6 +64,23 @@ Press writes:
 - `artifacts/diagram-XX.excalidraw`
 - `artifacts/diagram-links.md`
 - `artifacts/.press/plan-state.json`
+- `artifacts/publish-draft-package/substack.md`
+- `artifacts/publish-draft-package/lesswrong.md`
+- `artifacts/publish-draft-package/x-article.md`
+- `artifacts/publish-draft-package/metadata.json`
+- `artifacts/publish-draft-package/README.md`
+
+## Obsidian-First Commands (V1.5 Private Plugin)
+
+- `Press: Install or Repair`
+- `Press: Connect Services`
+- `Press: Ready Check`
+- `Press: Generate Diagram (Current File/Selection)`
+- `Press: Refine Diagram`
+- `Press: Generate Visual Plan`
+- `Press: Build Article Draft Package`
+- `Press: Update Press`
+- `Press: Rollback Press`
 
 ## Lifecycle Commands
 
@@ -80,6 +102,18 @@ Run health checks:
 npm run doctor
 ```
 
+Rollback to previous known-good ref:
+
+```bash
+npm run rollback
+```
+
+Connect or refresh Excalidraw service settings:
+
+```bash
+npm run connect-services -- --excalidraw-mcp-command "<your excalidraw mcp server command>"
+```
+
 ## Manual Command Surface (Fallback)
 
 ```bash
@@ -87,4 +121,5 @@ node dist/index.js publish diagram-create --project <project-path> --source <rel
 node dist/index.js publish diagram-refine --project <project-path> --diagram <diagram-id-or-filename> --instruction "<instruction>"
 node dist/index.js publish plan-generate --project <project-path> --source <relative-md-file>
 node dist/index.js publish plan-validate --project <project-path>
+node dist/index.js publish build-draft-package --project <project-path> [--source <relative-md-file>]
 ```

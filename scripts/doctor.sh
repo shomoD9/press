@@ -47,12 +47,18 @@ if [[ -z "$VAULT_PATH" ]]; then
 fi
 
 if [[ -z "$VAULT_PATH" ]]; then
-  echo "Doctor failed: no vault path provided and none found in .press-local.json"
+  echo "NOT READY"
+  echo "Fix: Set the creative vault path in Press settings, then rerun Press: Ready Check."
+  echo "Details:"
+  echo "- [ERROR] No vault path provided and none found in .press-local.json."
   exit 1
 fi
 
 if [[ ! -d "$VAULT_PATH" ]]; then
-  echo "Doctor failed: vault path does not exist: $VAULT_PATH"
+  echo "NOT READY"
+  echo "Fix: Update Press settings to the correct creative vault path, then rerun Press: Ready Check."
+  echo "Details:"
+  echo "- [ERROR] Vault path does not exist: $VAULT_PATH"
   exit 1
 fi
 
@@ -60,61 +66,75 @@ VAULT_PATH="$(cd "$VAULT_PATH" && pwd)"
 
 ERRORS=0
 WARNINGS=0
+FIRST_FIX=""
+DETAIL_LINES=()
+
+set_first_fix() {
+  if [[ -z "$FIRST_FIX" ]]; then
+    FIRST_FIX="$1"
+  fi
+}
+
+record_error() {
+  local message="$1"
+  local fix="$2"
+  echo "[doctor] ERROR: $message"
+  ERRORS=$((ERRORS + 1))
+  DETAIL_LINES+=("[ERROR] $message")
+  set_first_fix "$fix"
+}
+
+record_warning() {
+  local message="$1"
+  echo "[doctor] WARNING: $message"
+  WARNINGS=$((WARNINGS + 1))
+  DETAIL_LINES+=("[WARNING] $message")
+}
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "[doctor] ERROR: node is not available."
-  ERRORS=$((ERRORS + 1))
+  record_error "node is not available." "Install Node.js and rerun Press: Install or Repair."
 fi
 
 if ! command -v npm >/dev/null 2>&1; then
-  echo "[doctor] ERROR: npm is not available."
-  ERRORS=$((ERRORS + 1))
+  record_error "npm is not available." "Install npm and rerun Press: Install or Repair."
 fi
 
 if [[ ! -f "$REPO_ROOT/dist/index.js" ]]; then
-  echo "[doctor] ERROR: build artifact missing at $REPO_ROOT/dist/index.js"
-  ERRORS=$((ERRORS + 1))
+  record_error "build artifact missing at $REPO_ROOT/dist/index.js" "Run Press: Install or Repair to rebuild runtime artifacts."
 fi
 
 if [[ -f "$REPO_ROOT/dist/index.js" ]]; then
   if ! node "$REPO_ROOT/dist/index.js" help >/dev/null 2>&1; then
-    echo "[doctor] ERROR: Press runtime help command failed."
-    ERRORS=$((ERRORS + 1))
+    record_error "Press runtime help command failed." "Run Press: Install or Repair to restore runtime health."
   fi
 fi
 
 PRESS_SHIM_PATH="$HOME/.local/bin/press"
 if [[ ! -x "$PRESS_SHIM_PATH" ]]; then
-  echo "[doctor] ERROR: command shim missing or not executable at $PRESS_SHIM_PATH"
-  ERRORS=$((ERRORS + 1))
+  record_error "command shim missing or not executable at $PRESS_SHIM_PATH" "Run Press: Install or Repair to reinstall the local command shim."
 fi
 
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-  echo "[doctor] WARNING: $HOME/.local/bin is not in PATH."
-  WARNINGS=$((WARNINGS + 1))
+  record_warning "$HOME/.local/bin is not in PATH."
 fi
 
 SYSTEM_DIR="$VAULT_PATH/_system"
 if [[ ! -d "$SYSTEM_DIR" ]]; then
-  echo "[doctor] ERROR: missing vault _system directory: $SYSTEM_DIR"
-  ERRORS=$((ERRORS + 1))
+  record_error "missing vault _system directory: $SYSTEM_DIR" "Choose the correct creative vault path and rerun Press: Install or Repair."
 else
   if [[ ! -f "$SYSTEM_DIR/visual-trigger-ruleset.md" ]]; then
-    echo "[doctor] ERROR: missing visual trigger ruleset in vault _system."
-    ERRORS=$((ERRORS + 1))
+    record_error "missing visual trigger ruleset in vault _system." "Restore _system/visual-trigger-ruleset.md, then rerun Press: Ready Check."
   fi
 
   if [[ ! -f "$SYSTEM_DIR/press-wiring.md" ]]; then
-    echo "[doctor] ERROR: missing press wiring file: $SYSTEM_DIR/press-wiring.md"
-    ERRORS=$((ERRORS + 1))
+    record_error "missing press wiring file: $SYSTEM_DIR/press-wiring.md" "Run Press: Install or Repair to regenerate vault wiring."
   fi
 
   for FILE_NAME in CLAUDE.md AGENTS.md; do
     TARGET_FILE="$SYSTEM_DIR/$FILE_NAME"
     if [[ -f "$TARGET_FILE" ]]; then
       if ! grep -q "PRESS_WIRING:BEGIN" "$TARGET_FILE" || ! grep -q "PRESS_WIRING:END" "$TARGET_FILE"; then
-        echo "[doctor] WARNING: $TARGET_FILE exists but does not contain Press marker block."
-        WARNINGS=$((WARNINGS + 1))
+        record_warning "$TARGET_FILE exists but does not contain Press marker block."
       fi
     fi
   done
@@ -125,8 +145,7 @@ for FILE_NAME in CLAUDE.md AGENTS.md WARP.md CODEX.md CURSOR.md; do
   TARGET_FILE="$VAULT_PATH/$FILE_NAME"
   if [[ -f "$TARGET_FILE" ]]; then
     if ! grep -q "PRESS_WIRING:BEGIN" "$TARGET_FILE" || ! grep -q "PRESS_WIRING:END" "$TARGET_FILE"; then
-      echo "[doctor] WARNING: $TARGET_FILE exists but does not contain Press marker block."
-      WARNINGS=$((WARNINGS + 1))
+      record_warning "$TARGET_FILE exists but does not contain Press marker block."
     fi
   fi
 done
@@ -135,24 +154,31 @@ EXCALIDRAW_MCP_COMMAND="$(read_config_value excalidrawMcpCommand "$CONFIG_FILE")
 BRIDGE_SCRIPT="$REPO_ROOT/scripts/excalidraw-mcp-bridge.ts"
 
 if [[ ! -f "$BRIDGE_SCRIPT" ]]; then
-  echo "[doctor] ERROR: missing first-party Excalidraw bridge: $BRIDGE_SCRIPT"
-  ERRORS=$((ERRORS + 1))
+  record_error "missing first-party Excalidraw bridge: $BRIDGE_SCRIPT" "Run Press: Install or Repair to restore Excalidraw integration files."
 elif [[ -z "$EXCALIDRAW_MCP_COMMAND" ]]; then
-  echo "[doctor] WARNING: Excalidraw MCP command is not configured."
-  echo "[doctor] WARNING: Press will fallback to local placeholder diagrams until configured."
-  WARNINGS=$((WARNINGS + 1))
+  record_warning "Excalidraw MCP command is not configured."
+  record_warning "Press will fallback to local placeholder diagrams until configured."
 else
   if ! PRESS_EXCALIDRAW_MCP_SERVER_CMD="$EXCALIDRAW_MCP_COMMAND" node --import tsx "$BRIDGE_SCRIPT" --check >/dev/null 2>&1; then
-    echo "[doctor] ERROR: Excalidraw MCP bridge check failed for configured command."
-    ERRORS=$((ERRORS + 1))
+    record_error "Excalidraw MCP bridge check failed for configured command." "Run Press: Connect Services and verify the Excalidraw server command."
   fi
 fi
 
 if [[ "$ERRORS" -gt 0 ]]; then
   echo ""
-  echo "Doctor failed with $ERRORS error(s) and $WARNINGS warning(s)."
+  echo "NOT READY"
+  echo "Fix: ${FIRST_FIX:-Run Press: Install or Repair.}"
+  echo "Details:"
+  for line in "${DETAIL_LINES[@]}"; do
+    echo "- $line"
+  done
   exit 1
 fi
 
 echo ""
-echo "Doctor passed with $WARNINGS warning(s)."
+echo "READY"
+echo "Details:"
+for line in "${DETAIL_LINES[@]}"; do
+  echo "- $line"
+done
+echo "- [INFO] Ready check passed with $WARNINGS warning(s)."

@@ -10,12 +10,21 @@ Press capabilities are deterministic local commands. Chat is the interface, not 
 
 Agents should invoke this command surface for all Publish V1 actions.
 
+## Agent Preflight (Required)
+
+Before any diagram, plan, or validation action, verify Press capability availability first.
+
+Run a lightweight check (`press help` or equivalent command surface check) and only continue when it succeeds.
+
+If this preflight fails, stop and instruct the user to run Install or Repair instead of hand-authoring fallback artifacts.
+
 ## Supported Capabilities
 
 - `publish.diagram_create`
 - `publish.diagram_refine`
 - `publish.plan_generate`
 - `publish.plan_validate`
+- `publish.build_draft_package`
 
 ## Intent Mapping Contract
 
@@ -26,6 +35,8 @@ When the user asks to iterate or revise an existing diagram, call `publish.diagr
 When the user asks to produce a visual plan from a draft or final essay, call `publish.plan_generate`.
 
 When the user asks to check integrity or repair readiness, call `publish.plan_validate`.
+
+When the user asks to build publishing handoff drafts for article interfaces, call `publish.build_draft_package`.
 
 ## Excalidraw MCP Rules
 

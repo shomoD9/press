@@ -22,6 +22,19 @@ Both modules live under a single product. The Write module feeds into the Publis
 
 ---
 
+## V1.5: Obsidian-First Zero-Terminal Publish UX
+
+**Module:** Publish (usability hardening)
+
+**What ships:** A private Obsidian plugin first-party shell that exposes one-click Press actions directly in command palette: install/repair, connect services, ready check, update, rollback, diagram actions, visual plan generation, and article draft package generation. Agent wiring is hardened across Codex/Claude/Warp root files and `_system` wiring contract with explicit preflight rules. Ready check outputs a binary status (`READY` or `NOT READY`) plus one clear first fix action.
+
+**What Shomo gets:** No terminal is required for normal daily workflow. Setup, recovery, and upgrades happen inside Obsidian, and publish handoff drafts for article interfaces can be generated in one action.
+
+**Spec:** `spec-v1.5-obsidian-first.md`  
+**Requirements:** `functional-requirements-v1.5.md`
+
+---
+
 ## V2: Essay Engine + Descript Bridge + Written Track Publisher
 
 **Modules:** Write (V1) + Publish (iteration)
@@ -93,6 +106,7 @@ Remotion enters the visual trigger ruleset as a new trigger type. The agent deci
 | Version | What Ships | Module |
 |---------|-----------|--------|
 | V1 | Visual Plan Generator | Publish |
+| V1.5 | Obsidian-first install/connect/check/update/rollback + article draft package handoff | Publish |
 | V2 | Essay Engine V1 + Descript Bridge + Written Track Publisher | Write + Publish |
 | V3 | Metadata & Publishing Automation + Preview Workflow | Publish |
 | V4 | Remotion Integration | Publish |

@@ -1,0 +1,9 @@
+{
+  "id": "press-v15-private",
+  "name": "Press V1.5 (Private)",
+  "version": "1.5.0",
+  "minAppVersion": "1.5.0",
+  "description": "Obsidian-first shell for Press install, service connection, ready check, publish capabilities, update, and rollback.",
+  "author": "Press",
+  "isDesktopOnly": true
+}

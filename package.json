@@ -9,9 +9,12 @@
     "start": "node dist/index.js",
     "install:wiring": "node --import tsx scripts/install-wiring.ts",
     "excalidraw:check": "node --import tsx scripts/excalidraw-mcp-bridge.ts --check",
+    "connect-services": "node --import tsx scripts/connect-services.ts",
     "bootstrap": "bash scripts/bootstrap.sh",
     "update": "bash scripts/update.sh",
+    "rollback": "bash scripts/rollback.sh",
     "doctor": "bash scripts/doctor.sh",
+    "ready-check": "bash scripts/doctor.sh",
     "release:tag": "bash scripts/release-tag.sh"
   },
   "devDependencies": {

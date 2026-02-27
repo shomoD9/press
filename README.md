@@ -1,20 +1,25 @@
 # press
 
-Press is a chat-native creative production engine. You write in Obsidian, talk to your agent in natural language, and Press runs deterministic Publish capabilities behind the scenes.
+Press is an Obsidian-first, chat-native creative production engine. You write in Obsidian, talk to your agent in natural language, and Press runs deterministic Publish capabilities behind the scenes.
 
-## One-Time Setup
+## Obsidian-First Quick Start (V1.5)
 
-Run this from the repository root:
+Install the private plugin from this repo:
 
-```bash
-npm run bootstrap -- --vault "/absolute/path/to/creative" --excalidraw-mcp-command "<your excalidraw mcp server command>"
-```
+1. Copy `/Users/shomo/development/build/press/plugins/obsidian-press-v15` into `<creative-vault>/.obsidian/plugins/press-v15-private`.
+2. Enable **Press V1.5 (Private)** in Obsidian community plugins.
+3. Open plugin settings and set:
+   - Press repository path
+   - Creative vault path
+   - Excalidraw MCP command
+4. Run command palette actions in this order:
+   - `Press: Install or Repair`
+   - `Press: Connect Services`
+   - `Press: Ready Check`
 
-This command installs dependencies, builds and tests the runtime, installs a local `press` shim, writes vault wiring in `_system/`, creates root-level instruction files for common agent tools, and runs doctor checks.
+After this, normal usage is command-palette only (no terminal required).
 
-If you skip `--excalidraw-mcp-command`, Press still works but diagrams fall back to local placeholder mode until MCP is configured.
-
-## Daily Usage
+## Daily Commands in Obsidian
 
 Use your agent in natural language. The wiring maps intent to deterministic capability calls:
 
@@ -22,24 +27,21 @@ Use your agent in natural language. The wiring maps intent to deterministic capa
 - Refine diagram -> `publish.diagram_refine`
 - Generate visual plan -> `publish.plan_generate`
 - Validate plan -> `publish.plan_validate`
+- Build article draft package -> `publish.build_draft_package`
 
 Output files are written inside each project's `artifacts/` directory.
 
-## One-Command Upgrade (Stable Channel)
+## CLI Backend (Optional)
+
+The plugin runs these backend commands under the hood. Keep them as fallback/debug tools:
 
 ```bash
+npm run bootstrap -- --vault "/absolute/path/to/creative" --excalidraw-mcp-command "<your excalidraw mcp server command>"
 npm run update
-```
-
-This fetches stable tags, checks out the newest stable release, rebuilds, retests, and refreshes vault wiring.
-
-## Health Check
-
-```bash
+npm run rollback
 npm run doctor -- --vault "/absolute/path/to/creative"
+npm run connect-services -- --excalidraw-mcp-command "<your excalidraw mcp server command>"
 ```
-
-If vault path was saved during bootstrap, `npm run doctor` is enough.
 
 ## Maintainer Release Tag
 

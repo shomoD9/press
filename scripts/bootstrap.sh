@@ -97,7 +97,9 @@ node -e '
 const fs = require("fs");
 const path = require("path");
 const file = path.join(process.argv[1], ".press-local.json");
+const existing = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : {};
 const data = {
+  ...existing,
   vaultPath: process.argv[2],
   channel: "stable",
   excalidrawMcpCommand: process.argv[3],
@@ -120,9 +122,10 @@ if [[ -z "$EXCALIDRAW_MCP_COMMAND" ]]; then
 fi
 
 echo ""
-echo "Press Publish V1 is ready."
+echo "Press Publish V1.5 is ready."
 echo "Try natural-language prompts in your agent, such as:"
 echo "- Generate a diagram for this excerpt in drafts/draft-01.md"
 echo "- Refine diagram-01 to simplify labels"
 echo "- Generate visual plan for this project from essay.md"
 echo "- Validate the visual plan before I lock it"
+echo "- Build an article draft package for this project"

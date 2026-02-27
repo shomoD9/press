@@ -67,7 +67,9 @@ function buildInjectedBlock(relativeWiringPath: string, contextLabel: string): s
     `Press Publish V1 Wiring (${contextLabel})`,
     "",
     `Always load and follow \`${relativeWiringPath}\` before handling publish requests.`,
+    "Preflight: verify Press capability availability (`press help` or equivalent) before starting diagram or plan work.",
     "When user intent matches diagram creation/refinement, plan generation, or validation, invoke the mapped `publish.*` capability defined in that file.",
+    "When user asks for article-interface handoff drafts, invoke `publish.build_draft_package`.",
     "If required parameters are missing, ask one concise clarifying question, then execute.",
     "Never hand-author raw .excalidraw JSON for this workflow; route through the Press capability contract.",
     MARKER_END
