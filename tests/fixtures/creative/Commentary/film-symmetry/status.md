@@ -1,3 +1,0 @@
-# Status
-
-Current phase: Assembly
