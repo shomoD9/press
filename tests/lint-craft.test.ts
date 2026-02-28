@@ -3,20 +3,19 @@ These tests validate craft lint behavior so quality policy remains enforceable
 and predictable before rendering operations run.
 */
 
-import demoProject from '../artifacts/projects/demo-v1/project.spec.json';
-import demoStyle from '../artifacts/projects/demo-v1/style.tokens.json';
+import { demoProject, demoStyleTokens } from '../artifacts/projects/demo-v1/index.js';
 import { lintCraft } from '../engine/quality/index.js';
 
 describe('lintCraft', () => {
   it('passes demo artifacts without blocking errors', () => {
-    const result = lintCraft(demoProject, demoStyle);
+    const result = lintCraft(demoProject, demoStyleTokens);
 
     expect(result.ok).toBe(true);
     expect(result.issues.some((issue) => issue.severity === 'error')).toBe(false);
   });
 
   it('fails when foreground and background contrast is unsafe', () => {
-    const style = structuredClone(demoStyle);
+    const style = structuredClone(demoStyleTokens);
 
     // We intentionally collapse contrast to verify accessibility gate behavior.
     style.palette.foreground = '#111111';
@@ -40,7 +39,7 @@ describe('lintCraft', () => {
       focalWeight: 0.92,
     });
 
-    const result = lintCraft(project, demoStyle);
+    const result = lintCraft(project, demoStyleTokens);
 
     expect(result.ok).toBe(false);
     expect(result.issues.some((issue) => issue.code === 'FOCAL_DENSITY_EXCEEDED')).toBe(true);

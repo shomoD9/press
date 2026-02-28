@@ -1,0 +1,13 @@
+{
+  "projectId": "demo-v1",
+  "mode": "full",
+  "compositionId": "PressProject",
+  "outputPath": "/Users/shomo/development/build/press/renders/demo-v1/2026-02-28T14-57-02-608Z/demo-v1-full.mp4",
+  "renderedAt": "2026-02-28T14:58:04.165Z",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "durationInFrames": 930,
+  "codec": "h264",
+  "specHash": "6d0717c567230f65b245d2f8d799ef49ae4e26fc98fa71d4850e4c47311948e0"
+}

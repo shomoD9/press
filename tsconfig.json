@@ -13,6 +13,7 @@
     "baseUrl": "."
   },
   "include": [
+    "artifacts/**/*.ts",
     "engine/**/*.ts",
     "engine/**/*.tsx",
     "schemas/**/*.ts",

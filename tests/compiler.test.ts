@@ -3,7 +3,7 @@ These tests verify compiler timeline math so scene sequencing remains determinis
 and frame offsets cannot drift silently over time.
 */
 
-import demoProject from '../artifacts/projects/demo-v1/project.spec.json';
+import { demoProject } from '../artifacts/projects/demo-v1/index.js';
 import { compileProject } from '../engine/compiler/index.js';
 
 describe('compileProject', () => {

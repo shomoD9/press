@@ -5,11 +5,13 @@ has different composition IDs and output semantics.
 */
 
 import path from 'node:path';
-import { bundle, renderMedia, selectComposition } from '@remotion/renderer';
+import { bundle } from '@remotion/bundler';
+import { renderMedia, selectComposition } from '@remotion/renderer';
 import type { ProjectSpec, StyleTokens } from '../../schemas/index.js';
 import { compileProject } from '../compiler/index.js';
 import { PRESS_COMPOSITION_ID } from '../remotion/composition-ids.js';
 import type { PressInputProps } from '../remotion/types.js';
+import { renderViaStillFrames, shouldUseStillFrameFallback } from './render-fallback.js';
 import { ensureRenderDirectory, hashJson, writeRenderManifest } from './render-utils.js';
 
 export interface RenderProjectOptions {
@@ -24,6 +26,18 @@ export async function renderProject(options: RenderProjectOptions): Promise<{ ou
   const entryPoint = path.resolve('engine/remotion/index.ts');
   const serveUrl = await bundle({
     entryPoint,
+    webpackOverride: (currentConfiguration) => {
+      return {
+        ...currentConfiguration,
+        resolve: {
+          ...(currentConfiguration.resolve ?? {}),
+          extensionAlias: {
+            '.js': ['.ts', '.tsx', '.js'],
+            '.mjs': ['.mts', '.mjs'],
+          },
+        },
+      };
+    },
   });
 
   const composition = await selectComposition({
@@ -35,14 +49,33 @@ export async function renderProject(options: RenderProjectOptions): Promise<{ ou
   const outputDir = await ensureRenderDirectory(project.projectId);
   const outputPath = path.join(outputDir, `${project.projectId}-full.mp4`);
 
-  await renderMedia({
-    composition,
-    serveUrl,
-    codec: 'h264',
-    outputLocation: outputPath,
-    inputProps,
-    crf: 18,
-  });
+  try {
+    await renderMedia({
+      composition,
+      serveUrl,
+      codec: 'h264',
+      outputLocation: outputPath,
+      inputProps,
+      crf: 18,
+      concurrency: 1,
+      timeoutInMilliseconds: 120000,
+      chromiumOptions: {
+        gl: 'swiftshader',
+      },
+    });
+  } catch (error) {
+    if (!shouldUseStillFrameFallback(error)) {
+      throw error;
+    }
+
+    // Some environments fail frame-advance in video mode; still-frame stitching is more robust.
+    await renderViaStillFrames({
+      composition,
+      serveUrl,
+      inputProps,
+      outputPath,
+    });
+  }
 
   const compiled = compileProject(project);
   const specHash = hashJson({ project, styleTokens });

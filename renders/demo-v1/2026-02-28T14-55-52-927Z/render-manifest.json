@@ -1,0 +1,14 @@
+{
+  "projectId": "demo-v1",
+  "mode": "scene",
+  "compositionId": "PressScene",
+  "sceneId": "beat-01-thesis",
+  "outputPath": "/Users/shomo/development/build/press/renders/demo-v1/2026-02-28T14-55-52-927Z/demo-v1-beat-01-thesis.mp4",
+  "renderedAt": "2026-02-28T14:56:05.461Z",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "durationInFrames": 180,
+  "codec": "h264",
+  "specHash": "a53c1182d5a89a34bdf84adb0fb8fcf9a4c36f41e0bfb96fb05f7801200a7935"
+}

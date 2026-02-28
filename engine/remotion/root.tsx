@@ -11,12 +11,11 @@ import { ProjectComposition } from './project-composition.js';
 import { SceneComposition } from './scene-composition.js';
 import { compileProject, findSceneById } from '../compiler/index.js';
 import { PRESS_COMPOSITION_ID, PRESS_SCENE_COMPOSITION_ID } from './composition-ids.js';
-import defaultProject from '../../artifacts/projects/demo-v1/project.spec.json';
-import defaultStyleTokens from '../../artifacts/projects/demo-v1/style.tokens.json';
+import { demoProject, demoStyleTokens } from '../../artifacts/projects/demo-v1/index.js';
 
 const defaultInputProps: PressInputProps = {
-  project: defaultProject,
-  styleTokens: defaultStyleTokens,
+  project: demoProject,
+  styleTokens: demoStyleTokens,
 };
 
 // We touch staticFile to keep Remotion aware of public-asset resolution semantics.
@@ -29,12 +28,12 @@ export function RemotionRoot(): React.JSX.Element {
         id={PRESS_COMPOSITION_ID}
         component={ProjectComposition}
         defaultProps={defaultInputProps}
-        width={defaultProject.width}
-        height={defaultProject.height}
-        fps={defaultProject.fps}
-        durationInFrames={compileProject(defaultProject).totalDurationInFrames}
+        width={demoProject.width}
+        height={demoProject.height}
+        fps={demoProject.fps}
+        durationInFrames={compileProject(demoProject).totalDurationInFrames}
         calculateMetadata={({ props }) => {
-          const input = props as PressInputProps;
+          const input = props as unknown as PressInputProps;
           const compiled = compileProject(input.project);
 
           return {
@@ -48,13 +47,13 @@ export function RemotionRoot(): React.JSX.Element {
       <Composition
         id={PRESS_SCENE_COMPOSITION_ID}
         component={SceneComposition}
-        defaultProps={{ ...defaultInputProps, sceneId: defaultProject.scenes[0]?.sceneId }}
-        width={defaultProject.width}
-        height={defaultProject.height}
-        fps={defaultProject.fps}
-        durationInFrames={defaultProject.scenes[0]?.durationFrames ?? 120}
+        defaultProps={{ ...defaultInputProps, sceneId: demoProject.scenes[0]?.sceneId }}
+        width={demoProject.width}
+        height={demoProject.height}
+        fps={demoProject.fps}
+        durationInFrames={demoProject.scenes[0]?.durationFrames ?? 120}
         calculateMetadata={({ props }) => {
-          const input = props as PressInputProps;
+          const input = props as unknown as PressInputProps;
           const scene = input.sceneId
             ? findSceneById(input.project, input.sceneId)
             : input.project.scenes[0];

@@ -8,16 +8,17 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "press": "tsx scripts/press.ts",
-    "validate": "tsx scripts/press.ts validate artifacts/projects/demo-v1/project.spec.json",
-    "preview": "tsx scripts/press.ts preview --project demo-v1 --scene all",
-    "render:scene": "tsx scripts/press.ts render:scene --project demo-v1 --scene beat-01-thesis",
-    "render:full": "tsx scripts/press.ts render:full --project demo-v1",
+    "press": "node --import tsx scripts/press.ts",
+    "validate": "node --import tsx scripts/press.ts validate artifacts/projects/demo-v1/project.spec.json",
+    "preview": "node --import tsx scripts/press.ts preview --project demo-v1 --scene all",
+    "render:scene": "node --import tsx scripts/press.ts render:scene --project demo-v1 --scene beat-01-thesis",
+    "render:full": "node --import tsx scripts/press.ts render:full --project demo-v1",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@remotion/bundler": "4.0.0",
     "@remotion/cli": "4.0.0",
     "@remotion/renderer": "4.0.0",
     "react": "18.2.0",

@@ -6,3 +6,4 @@ scene render flows through one clear import surface.
 export * from './render-project.js';
 export * from './render-scene.js';
 export * from './render-utils.js';
+export * from './render-fallback.js';

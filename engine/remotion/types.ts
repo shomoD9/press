@@ -6,7 +6,7 @@ one source of truth for cross-process serialization.
 
 import type { ProjectSpec, StyleTokens } from '../../schemas/index.js';
 
-export interface PressInputProps {
+export interface PressInputProps extends Record<string, unknown> {
   project: ProjectSpec;
   styleTokens: StyleTokens;
   sceneId?: string;
