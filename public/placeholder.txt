@@ -1,0 +1,1 @@
+This placeholder keeps static asset routing deterministic for Remotion preview.

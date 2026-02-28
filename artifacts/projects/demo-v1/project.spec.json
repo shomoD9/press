@@ -1,0 +1,222 @@
+{
+  "projectId": "demo-v1",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "styleTokenRef": "style.tokens.json",
+  "renderPreset": "production",
+  "scenes": [
+    {
+      "sceneId": "beat-01-thesis",
+      "beatRange": {
+        "start": 0,
+        "end": 6
+      },
+      "treatmentType": "kinetic-typography",
+      "intent": "State the thesis with calm authority before complexity unfolds.",
+      "visualMetaphor": "A centered premise arriving with weighted momentum.",
+      "durationFrames": 180,
+      "layers": [
+        {
+          "id": "background-field",
+          "kind": "background",
+          "startFrame": 0,
+          "endFrame": 179,
+          "focalWeight": 0.2
+        },
+        {
+          "id": "headline",
+          "kind": "text",
+          "startFrame": 12,
+          "endFrame": 170,
+          "focalWeight": 0.9
+        }
+      ],
+      "cameraPlan": {
+        "keyframes": [
+          { "frame": 0, "x": 0, "y": 0, "zoom": 1, "rotationDeg": 0 },
+          { "frame": 90, "x": 0, "y": -8, "zoom": 1.02, "rotationDeg": 0 },
+          { "frame": 179, "x": 0, "y": 0, "zoom": 1.01, "rotationDeg": 0 }
+        ]
+      },
+      "timingPlan": {
+        "minHoldFrames": 16,
+        "maxConcurrentFocalElements": 1,
+        "accentFrames": [24, 42, 95]
+      },
+      "textPlan": {
+        "headline": "Ideas Need Form",
+        "subline": "Strong writing deserves visual precision, not spectacle.",
+        "emphasisHoldFrames": 22
+      }
+    },
+    {
+      "sceneId": "beat-02-network",
+      "beatRange": {
+        "start": 7,
+        "end": 14
+      },
+      "treatmentType": "concept-network",
+      "intent": "Show a concept radiating through connected systems.",
+      "visualMetaphor": "Nodes and links expanding from one controlling premise.",
+      "durationFrames": 210,
+      "layers": [
+        {
+          "id": "network-lines",
+          "kind": "diagram",
+          "startFrame": 20,
+          "endFrame": 209,
+          "focalWeight": 0.7
+        },
+        {
+          "id": "network-nodes",
+          "kind": "symbol",
+          "startFrame": 24,
+          "endFrame": 209,
+          "focalWeight": 0.85
+        }
+      ],
+      "cameraPlan": {
+        "keyframes": [
+          { "frame": 0, "x": 0, "y": 0, "zoom": 1, "rotationDeg": 0 },
+          { "frame": 120, "x": 10, "y": 2, "zoom": 1.04, "rotationDeg": -1 },
+          { "frame": 209, "x": 2, "y": 0, "zoom": 1.03, "rotationDeg": 0 }
+        ]
+      },
+      "timingPlan": {
+        "minHoldFrames": 12,
+        "maxConcurrentFocalElements": 2,
+        "accentFrames": [32, 78, 132]
+      },
+      "textPlan": {
+        "headline": "One Idea, Many Edges",
+        "subline": "When a claim is true, it propagates through structure.",
+        "emphasisHoldFrames": 18
+      }
+    },
+    {
+      "sceneId": "beat-03-contrast",
+      "beatRange": {
+        "start": 15,
+        "end": 22
+      },
+      "treatmentType": "comparison-split",
+      "intent": "Contrast old workflow friction against engineered clarity.",
+      "visualMetaphor": "A deliberate split where one side resolves chaos.",
+      "durationFrames": 180,
+      "layers": [
+        {
+          "id": "left-panel",
+          "kind": "shape",
+          "startFrame": 0,
+          "endFrame": 179,
+          "focalWeight": 0.65
+        },
+        {
+          "id": "right-panel",
+          "kind": "shape",
+          "startFrame": 0,
+          "endFrame": 179,
+          "focalWeight": 0.7
+        },
+        {
+          "id": "divider",
+          "kind": "diagram",
+          "startFrame": 8,
+          "endFrame": 179,
+          "focalWeight": 0.8
+        }
+      ],
+      "cameraPlan": {
+        "keyframes": [
+          { "frame": 0, "x": 0, "y": 0, "zoom": 1, "rotationDeg": 0 },
+          { "frame": 90, "x": 0, "y": 0, "zoom": 1.01, "rotationDeg": 0 },
+          { "frame": 179, "x": 0, "y": 0, "zoom": 1.01, "rotationDeg": 0 }
+        ]
+      },
+      "timingPlan": {
+        "minHoldFrames": 14,
+        "maxConcurrentFocalElements": 3,
+        "accentFrames": [20, 50, 100]
+      },
+      "textPlan": {
+        "headline": "From Noise to Signal",
+        "subline": "A better system is visible before it is explained.",
+        "emphasisHoldFrames": 16
+      }
+    },
+    {
+      "sceneId": "beat-04-abstract",
+      "beatRange": {
+        "start": 23,
+        "end": 30
+      },
+      "treatmentType": "abstract-geometric",
+      "intent": "Convey compounding forces without literal objects.",
+      "visualMetaphor": "Layered geometry drifting into emergent order.",
+      "durationFrames": 210,
+      "layers": [
+        {
+          "id": "shape-field",
+          "kind": "shape",
+          "startFrame": 0,
+          "endFrame": 209,
+          "focalWeight": 0.75
+        }
+      ],
+      "cameraPlan": {
+        "keyframes": [
+          { "frame": 0, "x": -4, "y": 0, "zoom": 1.02, "rotationDeg": 0 },
+          { "frame": 120, "x": 6, "y": -4, "zoom": 1.06, "rotationDeg": 1 },
+          { "frame": 209, "x": 0, "y": 0, "zoom": 1.03, "rotationDeg": 0 }
+        ]
+      },
+      "timingPlan": {
+        "minHoldFrames": 10,
+        "maxConcurrentFocalElements": 2,
+        "accentFrames": [45, 104, 160]
+      },
+      "textPlan": {
+        "headline": "Order Emerging",
+        "subline": "Complexity can resolve when motion obeys structure.",
+        "emphasisHoldFrames": 14
+      }
+    },
+    {
+      "sceneId": "beat-05-closing-card",
+      "beatRange": {
+        "start": 31,
+        "end": 36
+      },
+      "treatmentType": "text-emphasis-card",
+      "intent": "Land the conclusion with conviction and space.",
+      "visualMetaphor": "An editorial title card that settles the argument.",
+      "durationFrames": 150,
+      "layers": [
+        {
+          "id": "closing-card",
+          "kind": "text",
+          "startFrame": 10,
+          "endFrame": 140,
+          "focalWeight": 0.95
+        }
+      ],
+      "cameraPlan": {
+        "keyframes": [
+          { "frame": 0, "x": 0, "y": 0, "zoom": 1, "rotationDeg": 0 },
+          { "frame": 149, "x": 0, "y": 0, "zoom": 1, "rotationDeg": 0 }
+        ]
+      },
+      "timingPlan": {
+        "minHoldFrames": 20,
+        "maxConcurrentFocalElements": 1,
+        "accentFrames": [34, 80]
+      },
+      "textPlan": {
+        "headline": "Design Is Meaning",
+        "subline": "If the visual does not clarify the thought, it does not belong.",
+        "emphasisHoldFrames": 24
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# Node dependency trees are generated artifacts and should not be versioned.
+node_modules/
+
+# Build and render outputs belong in artifacts, not source control.
+dist/
+.renders-temp/
+
+# OS/editor noise.
+.DS_Store
+.vscode/
+
+# Test and coverage artifacts.
+coverage/

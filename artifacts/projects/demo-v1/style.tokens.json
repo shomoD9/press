@@ -1,0 +1,39 @@
+{
+  "palette": {
+    "background": "#0B0E16",
+    "foreground": "#F8FAFC",
+    "primary": "#6EE7FF",
+    "accent": "#F59E0B",
+    "muted": "#9CA3AF"
+  },
+  "typography": {
+    "displayFamily": "Sora, Avenir Next, sans-serif",
+    "bodyFamily": "Manrope, Inter, sans-serif",
+    "weightRegular": 400,
+    "weightBold": 700,
+    "trackingTight": -1,
+    "trackingNormal": 0
+  },
+  "spacingScale": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 40
+  },
+  "motionProfile": {
+    "enterDurationFrames": 18,
+    "exitDurationFrames": 14,
+    "springDamping": 26,
+    "springStiffness": 160,
+    "cameraMaxVelocityPerFrame": 12
+  },
+  "texturePolicy": {
+    "grainOpacity": 0.04,
+    "vignetteStrength": 0.22,
+    "allowGradients": true
+  },
+  "contrastRules": {
+    "minTextContrastRatio": 4.5
+  }
+}
